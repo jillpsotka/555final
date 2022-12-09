@@ -11,10 +11,10 @@ def read_grib_data(file, save_name):
     data = xr.open_dataset(file, engine="cfgrib")
     vars = data.to_array().to_numpy()  # 5-d array [variable,times,heights,lats,lons]
 
-    num_predictors = int(vars.shape[0] * vars.shape[2] * vars.shape[3] * vars.shape[4])
-    t = int(vars.shape[1])
-    vars = np.rollaxis(vars, 1, 0)
-    vars = vars.reshape((t, num_predictors)).T  # remove physical dimensions
+    # num_predictors = int(vars.shape[0] * vars.shape[2] * vars.shape[3] * vars.shape[4])
+    # t = int(vars.shape[1])
+    # vars = np.rollaxis(vars, 1, 0)
+    # vars = vars.reshape((t, num_predictors)).T  # remove physical dimensions
 
     with open(save_name, 'wb') as f:
         np.save(f,arr=vars)
@@ -105,12 +105,12 @@ def index_data(obs_file, era_file):
 
 
 if __name__ == '__main__':
-    era_2021 = read_grib_data('C:/Users/jillp/555/2021.grib','predictors_2021.npy')  # big ass file
-    era_2020 = read_grib_data('C:/Users/jillp/555/2020.grib','predictors_2020.npy')  # big ass file
-    era = np.concatenate((era_2020, era_2021),axis=1)
-    with open('predictors_2020-2021.npy', 'wb') as f:
-        np.save(f,arr=era)
+    # era_2021 = read_grib_data('C:/Users/jillp/555/100m_2020-2021.grib','100m_2020-2021.npy')  # big ass file
+    # era_2020 = read_grib_data('C:/Users/jillp/555/2020.grib','predictors_2020.npy')  # big ass file
+    # era = np.concatenate((era_2020, era_2021),axis=1)
+    # with open('predictors_2020-2021.npy', 'wb') as f:
+    #     np.save(f,arr=era)
 
     obs = avg_obs_data('bm_obs_2020-2021.txt')
-    index_data('hourly_data_2020-2021.npy','predictors_2020-2021.npy')
+    index_data('hourly_data_2020-2021.npy','100m_2020-2021.npy')
     print('Done!')
