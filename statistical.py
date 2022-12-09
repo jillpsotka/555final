@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 import xarray as xr
 import math
 from scipy import interpolate
+from trainer import Feedforward
+import torch
 
 
 # get data
@@ -39,15 +41,55 @@ w_turbine = w100*(80/100)**alpha
 
 
 # plot
-t=range(80)
-plt.plot(t, w_turbine[:80],label='turbine')
-plt.plot(t, obs[:80],label='obs')
-plt.xlabel('Time (h)')
-plt.ylabel('Wind speed (km/h)')
-plt.legend()
-plt.show()
+t=range(180)
+# plt.plot(t, w_turbine[:80],label='turbine')
+# plt.plot(t, obs[:80],label='obs')
+# plt.xlabel('Time (h)')
+# plt.ylabel('Wind speed (km/h)')
+# plt.legend()
+# plt.show()
 
 
 # calibration via linear regression
+p, pm, pb = np.polyfit(w_turbine, obs,deg=2)
+# plt.scatter(w_turbine, obs, s=7)
+# x = np.arange(60)
+# plt.plot(x,p*x**2+pm*x+b,c='red')
+# plt.show()
+w_turbine_corr_quad = p*w_turbine**2 + pm*w_turbine + pb
+
+
+m, b = np.polyfit(w_turbine, obs, deg=1)
+w_turbine_corr_linear = m*w_turbine + b
+
+linear_rmse = np.sqrt(np.square(obs - w_turbine_corr_linear).mean())
+quad_rmse = np.sqrt(np.square(obs - w_turbine_corr_quad).mean())
+print('linear rmse',linear_rmse)
+print('quadratic rmse',quad_rmse)
+
+
+# calibration via MLP
+X = np.load('predictors_2020-2021.npy')
+# normalize
+min_obs = np.min(obs)
+max_obs = np.max(obs)
+obs_norm = (obs - min_obs) / (max_obs-min_obs)
+for i in range(X.shape[0]):
+    X[i,:] = (X[i,:] - np.min(X[i,:])) / (np.max(X[i,:]) - np.min(X[i,:]))  # normalize
+model = Feedforward(X.shape[0],[89,88],num_layers=2,p=[0.05,0])
+model.load_state_dict(torch.load('model_fullytrained.pt'))
+model.eval()
+y_pred = model(torch.FloatTensor(X.T)).detach().numpy().squeeze()
+y_pred = y_pred * (max_obs - min_obs)+min_obs
+mlp_rmse = np.sqrt(np.square(obs - y_pred).mean())
+print('MLP rmse',mlp_rmse)
+
+
+
+plt.plot(t, y_pred[:180],label='MLP correction')
+plt.plot(t, w_turbine_corr_quad[:80],label='quadratic correction')
+plt.plot(t, obs[:180],label='obs')
+plt.legend()
+plt.show()
 
 
